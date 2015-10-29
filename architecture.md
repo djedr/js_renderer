@@ -1,5 +1,5 @@
 # Architecture
 camera
-  mode:
-    perspective
-    orthographic
+  * mode:
+    * perspective
+    * orthographic
