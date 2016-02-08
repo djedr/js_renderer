@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en-US">
+<head> 
+    <style>
+        canvas {
+            width: 620px;
+            height: 480px;
+            border: 1px solid red;
+        }
+        body {
+            background-color: gray;
+        }
+    </style>
+
+    <script src="mod.js"></script>
+    <script src="mama.vector2.js"></script>
+    <script src="mama.vector3.js"></script>
+    <script src="mama.color4.js"></script>
+    <script src="mama.matrix4x4.js"></script>
+    <script src="mama.js"></script>
+    <script src="renderer.vertex.js"></script>
+    <script src="renderer.face.js"></script>
+    <script src="renderer.texture.js"></script>
+    <script src="renderer.material.js"></script>
+    <script src="renderer.mesh.js"></script>
+    <script src="renderer.loader.obj.js"></script>
+    <script src="renderer.js"></script>
+    <script src="main.js"></script>
+</head>
+<body>
+    <canvas id="front_buffer" width="400" height="300" style="background-color: black;"></canvas>
+    <form>
+        <label>.obj file to load:</label>
+        <input id="model_file" type="file" value="file/wt_teapot.obj" />
+    </form>
+</body>
+</html>

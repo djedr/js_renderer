@@ -1,0 +1,66 @@
+<!doctype html>
+<!doctype html>
+<html lang="en-US">
+<head> 
+    <style>
+        canvas {
+            width: 400px;
+            height: 400px;
+            border: 1px solid red;
+            image-rendering: -moz-crisp-edges;
+        }
+        body {
+            background-color: gray;
+        }
+    </style>
+
+    <script src="mod.js"></script>
+    <script src="mama.vector2.js"></script>
+    <script src="mama.vector3.js"></script>
+    <script src="mama.color4.js"></script>
+    <script src="mama.matrix4x4.js"></script>
+    <script src="mama.ray.js"></script>
+    <script src="mama.sphere.js"></script>
+    <script src="mama.plane.js"></script>
+    <script src="mama.js"></script>
+    <script src="renderer.texture.js"></script>
+    <script src="renderer.material.js"></script>
+    <script src="renderer.intersection.js"></script>
+    <script src="renderer.light.js"></script>
+    <script src="renderer.vertex.js"></script>
+    <script src="renderer.face.js"></script>
+    <script src="renderer.mesh.js"></script>
+    <script src="renderer.loader.obj.js"></script>
+    <script src="renderer.camera.js"></script>
+    <script src="renderer.canvas.js"></script>
+    <script src="renderer.raytracer.js"></script>
+    <script src="raytracer.task6.js"></script>
+</head>
+<body>
+    <canvas id="front_buffer" width="400" height="400" style="background-color: black;"></canvas>
+    <form>
+        <label>
+            .obj file to load:
+            <input id="model_file" type="file" value="file/wt_teapot.obj" />
+        </label><br />
+        <label>
+            Sample mode:
+            <select id="sample_mode">
+                <option value="single">single</option>
+                <option value="random">random</option>
+                <option value="adaptive">adaptive</option>
+            </select>
+        </label><br />
+        <label>
+            Camera mode:
+            <select id="camera_mode">
+                <option value="perspective">perspective</option>
+                <option value="orthographic">orthographic</option>
+            </select>
+        </label><br />
+        <label>
+            <button id="render">render</button>
+        </label>
+    </form>
+</body>
+</html>
