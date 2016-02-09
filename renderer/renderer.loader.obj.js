@@ -59,7 +59,7 @@
             nameMatch = contents.match(nameRegex),
             name = nameMatch ? nameMatch[0].split(/\s+/)[1] : 'unnamed';
         
-        console.log('***\n* OBJ LOADER OUTPUT FOLLOWS. *\n***');
+        console.log('***\n* OBJ LOADER OUTPUT FOLLOWS.\n***');
         console.log('Parsing .obj file.');
         console.log('Assuming normals and texture coords are per vertex. First occurence defines vertex.');
         
@@ -212,7 +212,7 @@
         
         
         console.log('done parsing');
-        console.log('***\n* OBJ LOADER OUTPUT CONCLUDES. *\n***');
+        console.log('***\n* OBJ LOADER OUTPUT CONCLUDES.\n***');
         return new mod.mesh(name, vertices, faces);
     };
     
