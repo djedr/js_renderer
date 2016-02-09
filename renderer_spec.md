@@ -25,3 +25,14 @@ Zaprojektować i napisać aplikację realizującą wybrane kroki potoku renderin
         możliwość wykorzystania przez aplikację więcej, niż jednego źródła światła i więcej niż jednego rodzaju światła /+0.25/,
         możliwość wykorzystania przez aplikację więcej, niż jednej tekstury (indywidualne tekstury dla obiektów) /+0.25/,
         samodzielnie zaproponowany i zaakceptowany wcześniej przez prowadzącego algorytm grafiki /+0.25...+1.0/.
+        
+# Zadanie 1:
+
+Plik .zip zawierający tylko:
+
+    plik projektu (np. cbp, sln, vcproj, inne zależne od użytego środowiska),
+    pliki źródłowe (np. cpp, h, c, hpp, cs, inne zależne od użytego języka programowania),
+    plik wynikowy (np. exe),
+    pliki assetów w formie końcowej.
+
+Proszę usunąć wszelkie niepotrzebne pliki, np. pośrednie, katalog debug, release, bin.
