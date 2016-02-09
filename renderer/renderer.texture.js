@@ -50,6 +50,7 @@
         console.log('loading image:', file_name);
         
         //texture_image.crossOrigin = "*";
+        texture_image.crossOrigin = 'anonymous';
         texture_image.src = file_name;
     };
     
