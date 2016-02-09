@@ -35,7 +35,7 @@ function objLoaded(meshesLoaded) {
 
 function textureLoaded(texture) {
     meshes[0].material = new mod.material('texture', mama.color4.black(), mama.color4.black(), mama.color4.black(), 1,
-                                             new mod.texture(texture, 480, 480, 'rectangular'));   
+                                             new mod.texture(texture.name, 480, 480, 'rectangular'));   
 }
 
 var fps60 = 0, frame_counter = 0, fps = 0;
