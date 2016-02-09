@@ -1,4 +1,4 @@
-var canvas, context, device, mesh, meshes = [], camera, loader_obj, fileInputElement;
+var canvas, context, device, mesh, meshes = [], camera, loader_obj, modelFileInputElement, textureFileInputElement;
 
 document.addEventListener('DOMContentLoaded', init, false);
 
@@ -10,11 +10,14 @@ function init() {
     device = new Renderer.Device(canvas);
     loader_obj = new mod.loader_obj('files/wt_teapot.obj');
     
+    modelFileInputElement = document.getElementById("model_file");
+    textureFileInputElement = document.getElementById("texture_file");
     
-    fileInputElement = document.getElementById("model_file");
-    
-    fileInputElement.onchange = function () {
-        loader_obj.from_file(fileInputElement.files[0], objLoaded);
+    modelFileInputElement.onchange = function () {
+        loader_obj.from_file(modelFileInputElement.files[0], objLoaded);
+    };
+    textureFileInputElement.onchange = function () {
+        textureLoaded(textureFileInputElement.files[0]);
     };
     
     camera.Position = new mama.vector3(0, 0, 10);
@@ -22,12 +25,14 @@ function init() {
 }
 
 function objLoaded(meshesLoaded) {
-    meshesLoaded.material = new mod.material('texture', mama.color4.black(), mama.color4.black(), mama.color4.black(), 1,
-                                             new mod.texture("files/suzanne.png", 480, 480, 'rectangular'));
-    
     meshes = [meshesLoaded];
 
     requestAnimationFrame(mainLoop);
+}
+
+function textureLoaded(texture) {
+    meshes[0].material = new mod.material('texture', mama.color4.black(), mama.color4.black(), mama.color4.black(), 1,
+                                             new mod.texture(texture, 480, 480, 'rectangular'));   
 }
 
 var fps60 = 0, frame_counter = 0, fps = 0;
