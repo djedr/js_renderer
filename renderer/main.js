@@ -25,6 +25,9 @@ function init() {
 }
 
 function objLoaded(meshesLoaded) {
+    meshesLoaded.material = new mod.material('texture', mama.color4.black(), mama.color4.black(), mama.color4.black(), 1,
+                                             new mod.texture("files/suzanne.png", 480, 480, 'rectangular'));  
+    
     meshes = [meshesLoaded];
 
     requestAnimationFrame(mainLoop);
