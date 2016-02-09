@@ -28,15 +28,19 @@
     <script src="main.js"></script>
 </head>
 <body>
-    <canvas id="front_buffer" width="400" height="300" style="background-color: black; float: left"></canvas>
-    <div style="float: left"><form>
-        <input id="load_defaults_button" type="button" value="Load defaults" />
-        <br />
-        <label>Model (.obj) file to load:</label>
-        <input id="model_file" type="file" value="file/wt_teapot.obj" />
-        <br />
-        <label>Texture file to load:</label>
-        <input id="texture_file" type="file" value="" />
-    </form></div>
+    <div style="float: left">
+        <canvas id="front_buffer" width="400" height="300" style="background-color: black;"></canvas>
+    </div>
+    <div style="float: left">
+        <form>
+            <input id="load_defaults_button" type="button" value="Load defaults" />
+            <br />
+            <label>Model (.obj) file to load:</label>
+            <input id="model_file" type="file" value="file/wt_teapot.obj" />
+            <br />
+            <label>Texture file to load:</label>
+            <input id="texture_file" type="file" value="" />
+        </form>
+    </div>
 </body>
 </html>
