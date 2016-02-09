@@ -28,17 +28,28 @@
     <script src="main.js"></script>
 </head>
 <body>
-    <div style="float: left">
+    <div style="float: left; margin-left: 1em">
         <canvas id="front_buffer" width="400" height="300" style="background-color: black;"></canvas>
     </div>
     <div style="float: left">
         <form>
-            <input id="load_defaults_button" type="button" value="Load defaults" />
+            <input id="load_defaults_button" type="button" value="Load selected" />
             <br />
-            <label>Model (.obj) file to load:</label>
+            <label>Model to load:</label>
+            <select id="model_name">
+                <option value="wt_teapot">Teapot</option>
+                <option value="suzanne">Suzanne</option>
+            </select> 
+            <br />
+            <label>Texture to load:</label>
+            <select id="texture_name">
+                <option value="suzanne.jpg">Suzanne</option>
+            </select> 
+            <br/>
+            <label>External model (.obj) file to load:</label>
             <input id="model_file" type="file" value="file/wt_teapot.obj" />
             <br />
-            <label>Texture file to load:</label>
+            <label>External texture file to load:</label>
             <input id="texture_file" type="file" value="" />
         </form>
     </div>
