@@ -1,7 +1,0 @@
-function mirror () {
-    
-}
-
-function refract () {
-    
-}
