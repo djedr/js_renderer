@@ -1,4 +1,4 @@
-var canvas, context, device, mesh, meshes = [], camera, loader_obj, modelFileInputElement, textureFileInputElement;
+var canvas, context, device, mesh, meshes = [], camera, loader_obj, modelFileInputElement, textureFileInputElement, loadDefaultsInputElement;
 
 document.addEventListener('DOMContentLoaded', init, false);
 
@@ -12,6 +12,7 @@ function init() {
     
     modelFileInputElement = document.getElementById("model_file");
     textureFileInputElement = document.getElementById("texture_file");
+    loadDefaultsInputElement = document.getElementById("load_defaults_button");
     
     modelFileInputElement.onchange = function () {
         loader_obj.from_file(modelFileInputElement.files[0], objLoaded);
@@ -19,6 +20,10 @@ function init() {
     textureFileInputElement.onchange = function () {
         textureLoaded(textureFileInputElement.files[0]);
     };
+    loadDefaultsInputElement.onclick = function () {
+        loader_obj.from_file(modelFileInputElement.files[0], objLoaded);
+    };
+    
     
     camera.Position = new mama.vector3(0, 0, 10);
     camera.Target = new mama.vector3.zero();
