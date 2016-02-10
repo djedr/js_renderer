@@ -37,9 +37,10 @@
     loader_obj.prototype.from_file = function (file, cb) {
         var file_reader = new FileReader();
         var t = this;
-        console.log(file);
         
         file_reader.onload = function () {
+            console.log(file);
+            console.log('aaaaaaaaaaaaaaaaaa');
             cb(t.parse(file_reader.result, file.name));
         };
         
