@@ -39,13 +39,13 @@
         var t = this;
         
         file_reader.onload = function () {
-            cb(t.parse(file_reader.result));
+            cb(t.parse(file_reader.result, file.name));
         };
         
         file_reader.readAsText(file);
     };
     
-    loader_obj.prototype.parse = function (contents) {
+    loader_obj.prototype.parse = function (contents, name) {
         var vertexRegex = /^v(\s+-?\d+(.\d+)?){3,4}\s*$/gm;
         var vertexNormalRegex = /^vn(\s+-?\d+(.\d+)?){3}\s*$/gm;
         var vertexTextureRegex = /^vt(\s+-?\d+(.\d+)?){1,3}\s*$/gm;
@@ -60,7 +60,7 @@
             name = nameMatch ? nameMatch[0].split(/\s+/)[1] : 'unnamed';
         
         console.log('***\n* OBJ LOADER OUTPUT FOLLOWS.\n***');
-        console.log('Parsing .obj file.');
+        console.log('Parsing file: ' + name + '.');
         console.log('Assuming normals and texture coords are per vertex. First occurence defines vertex.');
         
         if (!vertexMatches) {
