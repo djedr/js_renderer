@@ -37,6 +37,7 @@
     loader_obj.prototype.from_file = function (file, cb) {
         var file_reader = new FileReader();
         var t = this;
+        console.log(file);
         
         file_reader.onload = function () {
             cb(t.parse(file_reader.result, file.name));
@@ -60,7 +61,7 @@
             name = nameMatch ? nameMatch[0].split(/\s+/)[1] : 'unnamed';
         
         console.log('***\n* OBJ LOADER OUTPUT FOLLOWS.\n***');
-        console.log('Parsing file: ' + name + '.');
+        console.log('Parsing file ' + name + '...');
         console.log('Assuming normals and texture coords are per vertex. First occurence defines vertex.');
         
         if (!vertexMatches) {
@@ -211,7 +212,7 @@
         }
         
         
-        console.log('done parsing');
+        console.log('Done parsing file ' + name + '.');
         console.log('***\n* OBJ LOADER OUTPUT CONCLUDES.\n***');
         return new mod.mesh(name, vertices, faces);
     };
