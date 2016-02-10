@@ -39,16 +39,13 @@
         var t = this;
         
         file_reader.onload = function () {
-            console.log(file);
-            console.log(file.name);
-            console.log('aaaaaaaaaaaaaaaaaa');
             cb(t.parse(file_reader.result, file.name));
         };
         
         file_reader.readAsText(file);
     };
     
-    loader_obj.prototype.parse = function (contents, name) {
+    loader_obj.prototype.parse = function (contents, file_name) {
         var vertexRegex = /^v(\s+-?\d+(.\d+)?){3,4}\s*$/gm;
         var vertexNormalRegex = /^vn(\s+-?\d+(.\d+)?){3}\s*$/gm;
         var vertexTextureRegex = /^vt(\s+-?\d+(.\d+)?){1,3}\s*$/gm;
@@ -63,7 +60,7 @@
             name = nameMatch ? nameMatch[0].split(/\s+/)[1] : 'unnamed';
         
         console.log('***\n* OBJ LOADER OUTPUT FOLLOWS.\n***');
-        console.log('Parsing file ' + name + '...');
+        console.log('Parsing file ' + file_name + '...');
         console.log('Assuming normals and texture coords are per vertex. First occurence defines vertex.');
         
         if (!vertexMatches) {
@@ -214,7 +211,7 @@
         }
         
         
-        console.log('Done parsing file ' + name + '.');
+        console.log('Done parsing file ' + file_name + '.');
         console.log('***\n* OBJ LOADER OUTPUT CONCLUDES.\n***');
         return new mod.mesh(name, vertices, faces);
     };
