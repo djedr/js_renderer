@@ -4,7 +4,7 @@ Zaprojektować i napisać aplikację realizującą wybrane kroki potoku renderin
 
     Wejście
         ~ aplikacja zawiera w kodzie źródłowym opis sceny analogiczny do np. kodu OpenGL
-            ? zbiór transformacji,
+            ~ zbiór transformacji,
             +  obiektów geometrycznych,
             ? świateł,
             + parametry punktu widzenia,
