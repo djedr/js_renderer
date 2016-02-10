@@ -3,7 +3,11 @@
 Zaprojektować i napisać aplikację realizującą wybrane kroki potoku renderingu nie używając bibliotek graficznych.
 
     Wejście
-        ~ aplikacja zawiera w kodzie źródłowym opis sceny (zbiór transformacji, obiektów geometrycznych, świateł i parametry punktu widzenia) - analogiczny do np. kodu OpenGL,
+        ~ aplikacja zawiera w kodzie źródłowym opis sceny analogiczny do np. kodu OpenGL
+            ? zbiór transformacji,
+            +  obiektów geometrycznych,
+            ? świateł,
+            + parametry punktu widzenia,
         + opcjonalne pliki graficzne z teksturami,
         + opcjonalne pliki z obiektami 3D.
     Wyjście
