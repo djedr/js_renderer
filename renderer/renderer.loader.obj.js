@@ -40,6 +40,7 @@
         
         file_reader.onload = function () {
             console.log(file);
+            console.log(file.name);
             console.log('aaaaaaaaaaaaaaaaaa');
             cb(t.parse(file_reader.result, file.name));
         };
