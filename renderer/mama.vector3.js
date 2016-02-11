@@ -206,6 +206,17 @@
                     + ", z: " + this.z
                     + " }";
     };
+    
+    vector3.prototype.to_simple_string = function () {
+        return this.x + "," + this.y + "," + this.z;
+    };
+    
+    vector3.prototype.from_simple_string = function (string) {
+        var s = string.split(",");
+        this.x = parseFloat(s[0]) || this.x;
+        this.y = parseFloat(s[1]) || this.y;
+        this.z = parseFloat(s[2]) || this.z;
+    };
 
     vector3.prototype.toString = vector3.prototype.to_string;
 

@@ -31,23 +31,28 @@
         
         var texture_image = new Image();
         
-        texture_image.width = this.width;
-        texture_image.height = this.height;
+        //texture_image.width = this.width;
+        //texture_image.height = this.height;
         
         texture_image.onload = function () {
             var internal_canvas = document.createElement("canvas"),
-                internal_context = internal_canvas.getContext("2d");
+                internal_context = internal_canvas.getContext("2d"),
+                width = this_.width || texture_image.width, height = this_.height || texture_image.height;
             
-            internal_canvas.width = this_.width;
-            internal_canvas.height = this_.height;
+            internal_canvas.width = width;
+            internal_canvas.height = height;
             
             internal_context.drawImage(texture_image, 0, 0);
-            this_.internal_buffer = internal_context.getImageData(0, 0, this_.width, this_.height);
+            this_.internal_buffer = internal_context.getImageData(0, 0, width, height);
             this_.loaded = true;
-            console.log('image', file_name, 'loaded');
+            
+            this_.width = width;
+            this_.height = height;
+            
+            console.log('Image', file_name, 'loaded');
         };
         
-        console.log('loading image:', file_name);
+        console.log('Loading image', file_name);
         
         //texture_image.crossOrigin = "*";
         texture_image.crossOrigin = 'anonymous';

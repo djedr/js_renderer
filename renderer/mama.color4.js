@@ -20,6 +20,10 @@
         return new color4(0, 0, 0, 1);
     }
         
+    color4.white = function () {
+        return new color4(1, 1, 1, 1);
+    }
+        
     //
     // instance methods
     //

@@ -200,6 +200,7 @@
                     vertices[v1Index].texture = textureCoordinates[t1Index];
                 }
                 
+                
                 if (vertices[v2Index].texture === null && !isNaN(t2Index)) {
                     vertices[v2Index].texture = textureCoordinates[t2Index];
                 }

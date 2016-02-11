@@ -69,7 +69,7 @@ var Renderer;
             var point2d = mama.vector3.transform_coordinates(vertex.coordinates, transformation_matrix),
                 point3dWorld = mama.vector3.transform_coordinates(vertex.coordinates, world),
                 normal3dWorld = mama.vector3.transform_coordinates(vertex.normal, world),
-                x = point2d.x * this.workingWidth + this.workingWidth / 2.0;
+                x = point2d.x * this.workingWidth + this.workingWidth / 2.0,
                 y = -point2d.y * this.workingHeight + this.workingHeight / 2.0;
 
             return (new mod.vertex(
@@ -121,65 +121,112 @@ var Renderer;
             }
         };
         
-        Device.prototype.processScanLine = function (data, va, vb, vc, vd, color, texture) {
+        var color_white = new mama.color4(1, 1, 1, 1);
+        
+        Device.prototype.shade_pixels_in_line = function (y, va, vb, vc, vd, color, texture, light) {
             var pa = va.coordinates,
                 pb = vb.coordinates,
                 pc = vc.coordinates,
                 pd = vd.coordinates,
-                gradient1 = pa.y != pb.y ? (data.currentY - pa.y) / (pb.y - pa.y) : 1,
-                gradient2 = pc.y != pd.y ? (data.currentY - pc.y) / (pd.y - pc.y) : 1,
+                // where along the edge of the triangle are we?
+                gradient1 = pa.y != pb.y ? (y - pa.y) / (pb.y - pa.y) : 1,
+                gradient2 = pc.y != pd.y ? (y - pc.y) / (pd.y - pc.y) : 1,
+                gradient1rem = 1 - gradient1,
+                gradient2rem = 1 - gradient2,
+                // scanline extreme points sx|-----|ex (start, end)
                 sx = this.interpolate(pa.x, pb.x, gradient1) >> 0,
                 ex = this.interpolate(pc.x, pd.x, gradient2) >> 0,
+                // depth extreme points z1|-----|z2
                 z1 = this.interpolate(pa.z, pb.z, gradient1),
                 z2 = this.interpolate(pc.z, pd.z, gradient2),
-                snl = this.interpolate(data.ndotla, data.ndotlb, gradient1),
-                enl = this.interpolate(data.ndotlc, data.ndotld, gradient2),
-                su = this.interpolate(data.ua, data.ub, gradient1),
-                eu = this.interpolate(data.uc, data.ud, gradient2),
-                sv = this.interpolate(data.va, data.vb, gradient1),
-                ev = this.interpolate(data.vc, data.vd, gradient2),
+                // interpolated normals at extreme points
+                s_norm = va.normal.scale(gradient1rem).add(vb.normal.scale(gradient1)),
+                e_norm = vc.normal.scale(gradient2rem).add(vd.normal.scale(gradient2)),
+                // interpolated world_coordinates
+                s_vc = va.world_coordinates.scale(gradient1rem).add(vb.world_coordinates.scale(gradient1)),
+                e_vc = vc.world_coordinates.scale(gradient2rem).add(vd.world_coordinates.scale(gradient2)),
+                // texture coordinate extremes
+                su, eu, sv, ev,
                 gradient, z, ndotl,
                 u, v,
-                texture_color;
+                texture_color;   
+            
+            if (texture) {
+                su = this.interpolate(va.texture.x, vb.texture.x, gradient1);
+                eu = this.interpolate(vc.texture.x, vd.texture.x, gradient2);
+                sv = this.interpolate(va.texture.y, vb.texture.y, gradient1);
+                ev = this.interpolate(vc.texture.y, vd.texture.y, gradient2);
+            }
             
             for (var x = sx; x < ex; ++x) {
                 gradient = (x - sx) / (ex - sx);
                 z = this.interpolate(z1, z2, gradient);
-                ndotl = this.interpolate(snl, enl, gradient);
+                // shade from interpolated normal (phong shading)
+                shade = this.shade(s_vc.scale(1 - gradient).add(e_vc.scale(gradient)), s_norm.scale(1 - gradient).add(e_norm.scale(gradient)), lights);
                 u = this.interpolate(su, eu, gradient);
                 v = this.interpolate(sv, ev, gradient);
                 
                 if (texture) {
                     texture_color = texture.map(new mama.vector2(u, v)); // todo don't create a million of these every frame
-                    // todo: also refactor drawTriangle/processScanLine; rename to shade_vertices/shade_pixels
+                    // todo: also refactor drawTriangle/processScanLine; rename to shade_vertices/shade_pixels_in_line
                 } else {
-                    texture_color = new mama.color4(1, 1, 1, 1);
+                    texture_color = color_white;
                 }
                 
-                this.drawPoint(new mama.vector3(x, data.currentY, z),
-                               new mama.color4(color.r * ndotl * texture_color.r,
-                                               color.g * ndotl * texture_color.g,
-                                               color.b * ndotl * texture_color.b,
+                this.drawPoint(new mama.vector3(x, y, z),
+                               new mama.color4(color.r * shade * texture_color.r,
+                                               color.g * shade * texture_color.g,
+                                               color.b * shade * texture_color.b,
                                                1));   
             }
         };
         
-        Device.prototype.computeNDotL = function (vertex, normal, lightPosition) {
-            var lightDirection = lightPosition.subtract(vertex);
+        var cos_outer_cone_angle = 0.8; // 36 deg
+        // diffuse phong
+        Device.prototype.shade = function (vertex, normal, lights) {
+            var light_direction, light_direction_normalized, light_index, total_shade = 0, spot_direction, current_light, cos_cur_angle, cos_inner_cone_angle, cos_inner_minus_outer_angle, spot, normal_normalized = mama.vector3.normalize(normal), lambert_term, attenuation_factor, distance;
             
-            normal.normalize();
-            lightDirection.normalize();
+            for (light_index = 0; light_index < lights.length; ++light_index) {
+                current_light = lights[light_index];
+                light_direction = current_light.position.subtract(vertex);
+                light_direction_normalized = mama.vector3.normalize(light_direction);
+                
+                if (current_light.type === 2) {
+                    spot_direction = current_light.spot_direction.normalize();
+                    cos_cur_angle = light_direction_normalized.dot(spot_direction);
+                    cos_inner_cone_angle = current_light.spot_cos_cutoff;
+                    cos_inner_minus_outer_angle = cos_inner_cone_angle - cos_outer_cone_angle;
+                    
+                    spot = 0;
+                    //if (cos_cur_angle > cos_outer_cone_angle) {
+                    spot = this.clamp((cos_cur_angle - cos_outer_cone_angle) / cos_inner_minus_outer_angle, 0, 1);
+                    //}
+                    
+                    lambert_term = normal_normalized.dot(light_direction_normalized);
+                    
+                    if (lambert_term > 0) {
+                        total_shade += lambert_term * spot;
+                    }
+                } else if (current_light.type === 1) {
+                    distance = light_direction.length();
+                    attenuation_factor = 1 / (current_light.constant_attenuation + current_light.linear_attenuation * distance + current_light.quadratic_attenuation * distance * distance);
+                    
+                    lambert_term = normal_normalized.dot(light_direction_normalized);
+                    if (lambert_term > 0) {
+                        total_shade += lambert_term * attenuation_factor;
+                    }
+                } else {                
+                    total_shade += Math.max(0, mama.vector3.dot(normal_normalized, light_direction_normalized));
+                }
+            }
             
-            return Math.max(0, mama.vector3.dot(normal, lightDirection));
+            return total_shade;
         };
         
-        Device.prototype.drawTriangle = function (v1, v2, v3, color, texture) {
+        Device.prototype.shade_vertices = function (v1, v2, v3, color, texture, lights) {
             var temp, dp1p2, dp1p3,
                 p1, p2, p3,
-                vnFace, lightPosition,
-                data, // todo: better name for data
                 nl1, nl2, nl3;
-            // it contains currentY and ndotl
             // could implement swap
             if (v1.coordinates.y > v2.coordinates.y) {
                 temp = v2;
@@ -201,12 +248,11 @@ var Renderer;
             p2 = v2.coordinates;
             p3 = v3.coordinates;
                 
-            vnFace = (v1.normal.add(v2.normal.add(v3.normal))).scale(1 / 3);
-            lightPosition = new mama.vector3(0, 10, 10);
-            nl1 = this.computeNDotL(v1.world_coordinates, v1.normal, lightPosition);
-            nl2 = this.computeNDotL(v2.world_coordinates, v2.normal, lightPosition);
-            nl3 = this.computeNDotL(v3.world_coordinates, v3.normal, lightPosition);
-            data = {};
+            //vnFace = (v1.normal.add(v2.normal.add(v3.normal))).scale(1 / 3);
+            
+//            nl1 = this.shade(v1.world_coordinates, v1.normal, light.position);
+//            nl2 = this.shade(v2.world_coordinates, v2.normal, light.position);
+//            nl3 = this.shade(v3.world_coordinates, v3.normal, light.position);
             
             if (p2.y - p1.y > 0) {
                 dp1p2 = (p2.x - p1.x) / (p2.y - p1.y);   
@@ -220,93 +266,60 @@ var Renderer;
                 dp1p3 = 0;   
             }
             
-            function fill_texture_data(ve1, ve2, ve3, ve4) {
-                data.ua = ve1.texture.x;
-                data.ub = ve2.texture.x;
-                data.uc = ve3.texture.x;
-                data.ud = ve4.texture.x;
-                
-                data.va = ve1.texture.y;
-                data.vb = ve2.texture.y;
-                data.vc = ve3.texture.y;
-                data.vd = ve4.texture.y;
-            }
-            
             if (dp1p2 > dp1p3) {
                 for (var y = p1.y >> 0; y <= p3.y >> 0; ++y) {
-                    data.currentY = y;
                     if (y < p2.y) {
-                        data.ndotla = nl1;
-                        data.ndotlb = nl3;
-                        data.ndotlc = nl1;
-                        data.ndotld = nl2;
-                        fill_texture_data(v1, v3, v1, v2);
-                        this.processScanLine(data, v1, v3, v1, v2, color, texture);
+                        this.shade_pixels_in_line(y, v1, v3, v1, v2, color, texture, lights);
                     } else {
-                        data.ndotla = nl1;
-                        data.ndotlb = nl3;
-                        data.ndotlc = nl2;
-                        data.ndotld = nl3;
-                        fill_texture_data(v1, v3, v2, v3);
-                        this.processScanLine(data, v1, v3, v2, v3, color, texture);   
+                        this.shade_pixels_in_line(y, v1, v3, v2, v3, color, texture, lights);   
                     }
                 }
             } else {
                 for (var y = p1.y >> 0; y <= p3.y >> 0; ++y) {
-                    data.currentY = y;
                     if (y < p2.y) {
-                        data.ndotla = nl1;
-                        data.ndotlb = nl2;
-                        data.ndotlc = nl1;
-                        data.ndotld = nl3;
-                        fill_texture_data(v1, v2, v1, v3);
-                        this.processScanLine(data, v1, v2, v1, v3, color, texture);   
+                        this.shade_pixels_in_line(y, v1, v2, v1, v3, color, texture, lights);   
                     } else {
-                        data.ndotla = nl2;
-                        data.ndotlb = nl3;
-                        data.ndotlc = nl1;
-                        data.ndotld = nl3;
-                        fill_texture_data(v2, v3, v1, v3); // perhaps process_scan_line shoud fill this
-                        this.processScanLine(data, v2, v3, v1, v3, color, texture);   
+                        this.shade_pixels_in_line(y, v2, v3, v1, v3, color, texture, lights);   
                     }
                 }
-            }
-            
+            }     
         };
 
-        Device.prototype.render = function (camera, meshes) {
+        Device.prototype.render = function (camera, meshes, lights) {
             var viewMatrix = mama.matrix4x4.look_at_lh(camera.Position, camera.Target, mama.vector3.up()),
                 projectionMatrix = mama.matrix4x4.perspective_fov_lh(0.78, this.workingWidth / this.workingHeight, 0.01, 1.0);
             
-            for (var index = 0; index < meshes.length; ++index) {
-                var cMesh = meshes[index];
+            //for (var light_index = 0; light_index < lights.length; ++light_index) {
+                for (var index = 0; index < meshes.length; ++index) {
+                    var cMesh = meshes[index];
 
-                var worldMatrix =
-                    mama.matrix4x4.rotation_yaw_pitch_roll(cMesh.rotation.y, cMesh.rotation.x, cMesh.rotation.z)
-                    .multiply(mama.matrix4x4.translation(cMesh.position.x, cMesh.position.y, cMesh.position.z));
+                    var worldMatrix =
+                        mama.matrix4x4.rotation_yaw_pitch_roll(cMesh.rotation.y, cMesh.rotation.x, cMesh.rotation.z)
+                        .multiply(mama.matrix4x4.translation(cMesh.position.x, cMesh.position.y, cMesh.position.z));
 
-                var transformMatrix = worldMatrix.multiply(viewMatrix).multiply(projectionMatrix);
+                    var transformMatrix = worldMatrix.multiply(viewMatrix).multiply(projectionMatrix);
 
-                for (var indexFaces = 0; indexFaces < cMesh.faces.length; ++indexFaces) {
-                    var currentFace = cMesh.faces[indexFaces];
-                    var vertexA = cMesh.vertices[currentFace.a];
-                    var vertexB = cMesh.vertices[currentFace.b];
-                    var vertexC = cMesh.vertices[currentFace.c];
-                    
-                    var pixelA = this.project(vertexA, transformMatrix, worldMatrix);
-                    var pixelB = this.project(vertexB, transformMatrix, worldMatrix);
-                    var pixelC = this.project(vertexC, transformMatrix, worldMatrix);
-                    
-                    //var color = 0.25 + ((indexFaces % cMesh.Faces.length) / cMesh.Faces.length) * 0.75;
-                    var color = 0.9;
-                    this.drawTriangle(pixelA, pixelB, pixelC, new mama.color4(color, color, color, 1), cMesh.material.texture);
-                    
-                    // wireframe:
-                    //this.drawBline(pixelA, pixelB);
-                    //this.drawBline(pixelB, pixelC);
-                    //this.drawBline(pixelC, pixelA);
+                    for (var indexFaces = 0; indexFaces < cMesh.faces.length; ++indexFaces) {
+                        var currentFace = cMesh.faces[indexFaces];
+                        var vertexA = cMesh.vertices[currentFace.a];
+                        var vertexB = cMesh.vertices[currentFace.b];
+                        var vertexC = cMesh.vertices[currentFace.c];
+
+                        var pixelA = this.project(vertexA, transformMatrix, worldMatrix);
+                        var pixelB = this.project(vertexB, transformMatrix, worldMatrix);
+                        var pixelC = this.project(vertexC, transformMatrix, worldMatrix);
+
+                        //var color = 0.25 + ((indexFaces % cMesh.Faces.length) / cMesh.Faces.length) * 0.75;
+                        var color = 0.9;
+                        this.shade_vertices(pixelA, pixelB, pixelC, new mama.color4(color, color, color, 1), cMesh.material.texture, lights);
+
+                        // wireframe:
+                        //this.drawBline(pixelA, pixelB);
+                        //this.drawBline(pixelB, pixelC);
+                        //this.drawBline(pixelC, pixelA);
+                    }
                 }
-            }
+            //}
         };
         
         return Device;

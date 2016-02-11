@@ -1,7 +1,11 @@
 var canvas, context, device,
-    mesh, meshes, camera,
+    mesh, meshes, selectedMesh,
+    lights, selectedLight,
+    camera,
     loader_obj,
     modelFileInputElement, textureFileInputElement, loadDefaultsInputElement,
+    selectedMeshInputElement, meshPositionInputElement,
+    selectedLightInputElement, lightPositionInputElement,
     fps60, frame_counter, fps;
 
 document.addEventListener('DOMContentLoaded', init, false);
@@ -22,6 +26,13 @@ function init() {
     
     // initialize scene objects
     meshes = [];
+    selectedMesh = 0;
+    
+    lights = [//{ position: new mama.vector3(0, 10, 10), type: 0 },
+              { position: new mama.vector3(30, 30, 0), type: 1, constant_attenuation: 0, linear_attenuation: 0, quadratic_attenuation: 0.002 },
+              { position: new mama.vector3(0, 0, 1.5), type: 2, spot_direction: new mama.vector3(0, 0, 1), spot_cos_cutoff: 1 }
+             ];
+    selectedLight = 0;
     
     // scene object loader
     loader_obj = new mod.loader_obj('files/wt_teapot.obj');
@@ -30,6 +41,10 @@ function init() {
     modelFileInputElement = document.getElementById("model_file");
     textureFileInputElement = document.getElementById("texture_file");
     loadDefaultsInputElement = document.getElementById("load_defaults_button");
+    selectedMeshInputElement = document.getElementById("selected_mesh");
+    meshPositionInputElement = document.getElementById("mesh_position");
+    selectedLightInputElement = document.getElementById("selected_light");
+    lightPositionInputElement = document.getElementById("light_position");
     
     // loading a scene object
     modelFileInputElement.onchange = function () {
@@ -43,6 +58,27 @@ function init() {
     loadDefaultsInputElement.onclick = function () {
         loader_obj.from_file(modelFileInputElement.files[0], objLoaded);
     };
+    // selecting a mesh
+    selectedMeshInputElement.onchange = function () {
+        if (selectedMeshInputElement.value >= 0 && selectedMeshInputElement.value < meshes.length) {
+            selectedMesh = selectedMeshInputElement.value;
+            meshPositionInputElement.value = meshes[selectedMesh].position.to_simple_string();
+        }
+    };
+    meshPositionInputElement.onchange = function () {
+        meshes[selectedMesh].position.from_simple_string(meshPositionInputElement.value);
+    };
+    // selecting a light
+    selectedLightInputElement.onchange = function () {
+        if (selectedLightInputElement.value >= 0 && selectedLightInputElement.value < lights.length) {
+            selectedLight = selectedLightInputElement.value;
+            lightPositionInputElement.value = lights[selectedLight].position.to_simple_string();
+        }
+    };
+    lightPositionInputElement.onchange = function () {
+        lights[selectedLight].position.from_simple_string(lightPositionInputElement.value);
+    };
+    
     
     // initialize fps counters
     fps60 = 0;
@@ -54,17 +90,16 @@ function init() {
 }
 
 // loading an object into the scene
-function objLoaded(loadedMesh) {
-    loadedMesh.material = new mod.material('texture', mama.color4.black(), mama.color4.black(), mama.color4.black(), 1,
-                                             new mod.texture("files/suzanne.png", 480, 480, 'rectangular'));  
-    
-    meshes.push(loadedMesh)
+function objLoaded(loadedMesh) {    
+    meshes.push(loadedMesh);
 }
 
 // loading an object's texture into the scene
 function textureLoaded(texture) {
-    meshes[0].material = new mod.material('texture', mama.color4.black(), mama.color4.black(), mama.color4.black(), 1,
-                                             new mod.texture(texture.name, 480, 480, 'rectangular'));   
+    if (meshes.length > 0) {
+        meshes[selectedMesh].material = new mod.material('texture', mama.color4.black(), mama.color4.black(), mama.color4.black(), 1,
+                                             new mod.texture('files/' + texture.name, 0, 0, 'rectangular'));  
+    }  
 }
 
 function mainLoop() {
@@ -77,18 +112,18 @@ function mainLoop() {
         meshes[i].rotation.y += 0.01;
     }
 
-    device.render(camera, meshes);
+    device.render(camera, meshes, lights);
     device.present();
 
-    requestAnimationFrame(function () {
-        mainLoop();
-        fps60 += 1 / ((performance.now() - startTime) / 1000);
-        frame_counter += 1;
-        if (frame_counter >= 60) {
-            fps = ((fps60)) / 60;
-            frame_counter = 0;
-            fps60 = 0;
-        }
-        context.fillText('fps: ' + (fps | 0), 2, 10);
-    }); 
+    requestAnimationFrame(mainLoop);
+    
+    // calculate average fps
+    fps60 += 1 / ((performance.now() - startTime) / 1000);
+    frame_counter += 1;
+    if (frame_counter >= 60) {
+        fps = ((fps60)) / 60;
+        frame_counter = 0;
+        fps60 = 0;
+    }
+    context.fillText('fps: ' + (fps | 0), 2, 10); 
 }
