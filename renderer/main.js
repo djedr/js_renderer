@@ -3,12 +3,35 @@ var canvas, context, device,
     lights, selectedLight,
     camera,
     loader_obj,
+    modelNameInputElement, textureNameInputElement,
     modelFileInputElement, textureFileInputElement, loadDefaultsInputElement,
     selectedMeshInputElement, meshPositionInputElement,
     selectedLightInputElement, lightPositionInputElement,
     fps60, frame_counter, fps;
 
 document.addEventListener('DOMContentLoaded', init, false);
+
+var getFileBlob = function (url, cb) {
+        var xhr = new XMLHttpRequest();
+        xhr.open("GET", url);
+        xhr.responseType = "blob";
+        xhr.addEventListener('load', function() {
+            cb(xhr.response);
+        });
+        xhr.send();
+};
+
+var blobToFile = function (blob, name) {
+        blob.lastModifiedDate = new Date();
+        blob.name = name;
+        return blob;
+};
+
+var getFileObject = function(filePathOrUrl, cb) {
+       getFileBlob(filePathOrUrl, function (blob) {
+          cb(blobToFile(blob, 'test.jpg'));
+       });
+};
 
 function init() {
     canvas = document.getElementById('front_buffer');
@@ -40,6 +63,8 @@ function init() {
     // user controls
     modelFileInputElement = document.getElementById("model_file");
     textureFileInputElement = document.getElementById("texture_file");
+    modelNameInputElement = document.getElementById("model_name");
+    textureNameInputElement = document.getElementById("texture_name");
     loadDefaultsInputElement = document.getElementById("load_defaults_button");
     selectedMeshInputElement = document.getElementById("selected_mesh");
     meshPositionInputElement = document.getElementById("mesh_position");
@@ -49,6 +74,11 @@ function init() {
     // loading a scene object
     modelFileInputElement.onchange = function () {
         loader_obj.from_file(modelFileInputElement.files[0], objLoaded);
+    };
+    modelNameInputElement.onchange = function () {
+        getFileObject('files/' + modelNameInputElement.value, function (fileObject) {
+            loader_obj.from_file(fileObject, objLoaded);
+        });
     };
     // loading a texture
     textureFileInputElement.onchange = function () {
