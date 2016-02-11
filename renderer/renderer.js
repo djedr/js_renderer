@@ -22,11 +22,11 @@ var Renderer;
             this.halfWorkingHeight = canvas.height * 0.5;
             this.workingContext = this.workingCanvas.getContext('2d');
             this.depthbuffer = new Array(this.workingWidth * this.workingHeight);
-            this.projection_matrix =  mama.matrix4x4.perspective_fov_lh(0.78, this.workingWidth / this.workingHeight, 0.01, 1.0);
+            this.projection_matrix = mama.matrix4x4.perspective_fov_lh(0.78, this.workingWidth / this.workingHeight, 0.01, 1.0);
         }
         
         Device.prototype.interpolate = function (min, max, gradient) {
-            return min + (max - min) * Math.max(min, Math.min(gradient, max));   
+            return min + (max - min) * Math.max(0, Math.min(gradient, 1));   
         };
 
         Device.prototype.clear = function () {
