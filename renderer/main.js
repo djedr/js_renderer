@@ -29,7 +29,9 @@ var blobToFile = function (blob, name) {
 
 var getFileObject = function(filePathOrUrl, cb) {
        getFileBlob(filePathOrUrl, function (blob) {
-          cb(blobToFile(blob, 'test.jpg'));
+          var file_name = filePathOrUrl.split("/");
+           file_name = file_name[file_name.length-1];
+          cb(blobToFile(blob, file_name));
        });
 };
 
