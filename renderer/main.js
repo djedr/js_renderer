@@ -84,6 +84,11 @@ function init() {
     textureFileInputElement.onchange = function () {
         textureLoaded(textureFileInputElement.files[0]);
     };
+    textureNameInputElement.onchange = function () {
+        getFileObject('files/' + textureNameInputElement.value, function (fileObject) {
+            textureLoaded(fileObject);
+        });
+    };
     // todo: change this
     loadDefaultsInputElement.onclick = function () {
         loader_obj.from_file(modelFileInputElement.files[0], objLoaded);
