@@ -16,22 +16,17 @@ var Renderer;
     var Device = (function () {
         function Device(canvas) {
             this.workingCanvas = canvas;
-            this.workingWidth = canvas.width; // possibly not necessary
-            this.workingHeight = canvas.height; // -||-
+            this.workingWidth = canvas.width;
+            this.workingHeight = canvas.height;
+            this.halfWorkingWidth = canvas.width * 0.5;
+            this.halfWorkingHeight = canvas.height * 0.5;
             this.workingContext = this.workingCanvas.getContext('2d');
             this.depthbuffer = new Array(this.workingWidth * this.workingHeight);
+            this.projection_matrix =  mama.matrix4x4.perspective_fov_lh(0.78, this.workingWidth / this.workingHeight, 0.01, 1.0);
         }
         
-        // this should go to math
-        Device.prototype.clamp = function (value, min, max) {
-            if (min === undefined) { min = 0; }
-            if (max === undefined) { max = 1; }
-            
-            return Math.max(min, Math.min(value, max));
-        };
-        
         Device.prototype.interpolate = function (min, max, gradient) {
-            return min + (max - min) * this.clamp(gradient);   
+            return min + (max - min) * Math.max(min, Math.min(gradient, max));   
         };
 
         Device.prototype.clear = function () {
@@ -39,7 +34,7 @@ var Renderer;
             this.backbuffer = this.workingContext.getImageData(0, 0, this.workingWidth, this.workingHeight);
             
             for (var i = 0; i < this.depthbuffer.length; ++i) {
-                this.depthbuffer[i] = 10000000;   
+                this.depthbuffer[i] = 10000000;
             }
         };
 
@@ -69,8 +64,8 @@ var Renderer;
             var point2d = mama.vector3.transform_coordinates(vertex.coordinates, transformation_matrix),
                 point3dWorld = mama.vector3.transform_coordinates(vertex.coordinates, world),
                 normal3dWorld = mama.vector3.transform_coordinates(vertex.normal, world),
-                x = point2d.x * this.workingWidth + this.workingWidth / 2.0,
-                y = -point2d.y * this.workingHeight + this.workingHeight / 2.0;
+                x = point2d.x * this.workingWidth + this.halfWorkingWidth,
+                y = -point2d.y * this.workingHeight + this.halfWorkingHeight;
 
             return (new mod.vertex(
                 new mama.vector3(x, y, point2d.z),
@@ -79,50 +74,8 @@ var Renderer;
                 point3dWorld
             ));
         };
-
-        // clipping
-        Device.prototype.drawPoint = function (point, color) {
-            if (point.x >= 0 && point.y >= 0 && point.x < this.workingWidth && point.y < this.workingHeight) {
-                this.putPixel(point.x, point.y, point.z, color);
-            }
-        };
-      
-        Device.prototype.drawLine = function (point0, point1) {
-            var distance = point1.subtract(point0);
-            var distanceLength = distance.length();
-            
-            if (distanceLength < 2) {
-                return;   
-            }
-            
-            var middlePoint = point0.add(distance.scale(0.5));
-            this.drawPoint(middlePoint);
-            
-            this.drawLine(point0, middlePoint);
-            this.drawLine(middlePoint, point1);
-        };
-        
-        Device.prototype.drawBline = function (point0, point1) {
-            var x0 = point0.x >> 0, y0 = point0.y >> 0,
-                x1 = point1.x >> 0, y1 = point1.y >> 0,
-                dx = Math.abs(x1 - x0), dy = Math.abs(y1 - y0),
-                sx = (x0 < x1) ? 1 : -1, sy = (y0 < y1) ? 1 : -1,
-                err = dx - dy;
-            
-            while (true) {
-                this.drawPoint(new mama.vector2(x0, y0));
-                
-                if ((x0 == x1) && (y0 == y1)) break;
-                
-                var err2 = 2 * err;
-                
-                if (err2 > -dy) { err -= dy; x0 += sx; }
-                if (err2 < dx) { err += dx; y0 += sy; }
-            }
-        };
         
         var color_white = new mama.color4(1, 1, 1, 1);
-        
         Device.prototype.shade_pixels_in_line = function (y, va, vb, vc, vd, color, texture, light) {
             var pa = va.coordinates,
                 pb = vb.coordinates,
@@ -147,9 +100,10 @@ var Renderer;
                 e_vc = vc.world_coordinates.scale(gradient2rem).add(vd.world_coordinates.scale(gradient2)),
                 // texture coordinate extremes
                 su, eu, sv, ev,
-                gradient, z, ndotl,
-                u, v,
-                texture_color;   
+                gradient, gradientrem,
+                z, u, v,
+                texture_color,
+                point;   
             
             if (texture) {
                 su = this.interpolate(va.texture.x, vb.texture.x, gradient1);
@@ -160,24 +114,28 @@ var Renderer;
             
             for (var x = sx; x < ex; ++x) {
                 gradient = (x - sx) / (ex - sx);
+                gradientrem = 1 - gradient;
                 z = this.interpolate(z1, z2, gradient);
                 // shade from interpolated normal (phong shading)
-                shade = this.shade(s_vc.scale(1 - gradient).add(e_vc.scale(gradient)), s_norm.scale(1 - gradient).add(e_norm.scale(gradient)), lights);
+                shade = this.shade(s_vc.scale(gradientrem).add(e_vc.scale(gradient)), s_norm.scale(gradientrem).add(e_norm.scale(gradient)), lights);
                 u = this.interpolate(su, eu, gradient);
                 v = this.interpolate(sv, ev, gradient);
                 
                 if (texture) {
-                    texture_color = texture.map(new mama.vector2(u, v)); // todo don't create a million of these every frame
-                    // todo: also refactor drawTriangle/processScanLine; rename to shade_vertices/shade_pixels_in_line
+                    texture_color = texture.rectangular_map(new mama.vector2(u, v));
                 } else {
                     texture_color = color_white;
                 }
                 
-                this.drawPoint(new mama.vector3(x, y, z),
-                               new mama.color4(color.r * shade * texture_color.r,
-                                               color.g * shade * texture_color.g,
-                                               color.b * shade * texture_color.b,
-                                               1));   
+                point = new mama.vector3(x, y, z);
+                // clipping
+                if (point.x >= 0 && point.y >= 0 && point.x < this.workingWidth && point.y < this.workingHeight) {
+                    this.putPixel(point.x, point.y, point.z,
+                                  new mama.color4(color.r * shade * texture_color.r,
+                                       color.g * shade * texture_color.g,
+                                       color.b * shade * texture_color.b,
+                                       1));
+                }
             }
         };
         
@@ -197,10 +155,7 @@ var Renderer;
                     cos_inner_cone_angle = current_light.spot_cos_cutoff;
                     cos_inner_minus_outer_angle = cos_inner_cone_angle - cos_outer_cone_angle;
                     
-                    spot = 0;
-                    //if (cos_cur_angle > cos_outer_cone_angle) {
-                    spot = this.clamp((cos_cur_angle - cos_outer_cone_angle) / cos_inner_minus_outer_angle, 0, 1);
-                    //}
+                    spot = Math.max(0, Math.min((cos_cur_angle - cos_outer_cone_angle) / cos_inner_minus_outer_angle, 1));
                     
                     lambert_term = normal_normalized.dot(light_direction_normalized);
                     
@@ -247,12 +202,6 @@ var Renderer;
             p1 = v1.coordinates;
             p2 = v2.coordinates;
             p3 = v3.coordinates;
-                
-            //vnFace = (v1.normal.add(v2.normal.add(v3.normal))).scale(1 / 3);
-            
-//            nl1 = this.shade(v1.world_coordinates, v1.normal, light.position);
-//            nl2 = this.shade(v2.world_coordinates, v2.normal, light.position);
-//            nl3 = this.shade(v3.world_coordinates, v3.normal, light.position);
             
             if (p2.y - p1.y > 0) {
                 dp1p2 = (p2.x - p1.x) / (p2.y - p1.y);   
@@ -286,40 +235,32 @@ var Renderer;
         };
 
         Device.prototype.render = function (camera, meshes, lights) {
-            var viewMatrix = mama.matrix4x4.look_at_lh(camera.Position, camera.Target, mama.vector3.up()),
-                projectionMatrix = mama.matrix4x4.perspective_fov_lh(0.78, this.workingWidth / this.workingHeight, 0.01, 1.0);
+            var view_matrix = mama.matrix4x4.look_at_lh(camera.Position, camera.Target, mama.vector3.up()),
+                projection_matrix = this.projection_matrix; // assume it doesn't change
             
-            //for (var light_index = 0; light_index < lights.length; ++light_index) {
-                for (var index = 0; index < meshes.length; ++index) {
-                    var cMesh = meshes[index];
+            for (var index = 0; index < meshes.length; ++index) {
+                var current_mesh = meshes[index];
 
-                    var worldMatrix =
-                        mama.matrix4x4.rotation_yaw_pitch_roll(cMesh.rotation.y, cMesh.rotation.x, cMesh.rotation.z)
-                        .multiply(mama.matrix4x4.translation(cMesh.position.x, cMesh.position.y, cMesh.position.z));
+                var world_matrix =
+                    mama.matrix4x4.rotation_yaw_pitch_roll(current_mesh.rotation.y, current_mesh.rotation.x, current_mesh.rotation.z)
+                    .multiply(mama.matrix4x4.translation(current_mesh.position.x, current_mesh.position.y, current_mesh.position.z));
 
-                    var transformMatrix = worldMatrix.multiply(viewMatrix).multiply(projectionMatrix);
+                var transform_matrix = world_matrix.multiply(view_matrix).multiply(projection_matrix);
 
-                    for (var indexFaces = 0; indexFaces < cMesh.faces.length; ++indexFaces) {
-                        var currentFace = cMesh.faces[indexFaces];
-                        var vertexA = cMesh.vertices[currentFace.a];
-                        var vertexB = cMesh.vertices[currentFace.b];
-                        var vertexC = cMesh.vertices[currentFace.c];
+                for (var indexFaces = 0; indexFaces < current_mesh.faces.length; ++indexFaces) {
+                    var currentFace = current_mesh.faces[indexFaces];
+                    var vertexA = current_mesh.vertices[currentFace.a];
+                    var vertexB = current_mesh.vertices[currentFace.b];
+                    var vertexC = current_mesh.vertices[currentFace.c];
 
-                        var pixelA = this.project(vertexA, transformMatrix, worldMatrix);
-                        var pixelB = this.project(vertexB, transformMatrix, worldMatrix);
-                        var pixelC = this.project(vertexC, transformMatrix, worldMatrix);
+                    var pixelA = this.project(vertexA, transform_matrix, world_matrix);
+                    var pixelB = this.project(vertexB, transform_matrix, world_matrix);
+                    var pixelC = this.project(vertexC, transform_matrix, world_matrix);
 
-                        //var color = 0.25 + ((indexFaces % cMesh.Faces.length) / cMesh.Faces.length) * 0.75;
-                        var color = 0.9;
-                        this.shade_vertices(pixelA, pixelB, pixelC, new mama.color4(color, color, color, 1), cMesh.material.texture, lights);
-
-                        // wireframe:
-                        //this.drawBline(pixelA, pixelB);
-                        //this.drawBline(pixelB, pixelC);
-                        //this.drawBline(pixelC, pixelA);
-                    }
+                    var color = 0.9;
+                    this.shade_vertices(pixelA, pixelB, pixelC, new mama.color4(color, color, color, 1), current_mesh.material.texture, lights);
                 }
-            //}
+            }
         };
         
         return Device;

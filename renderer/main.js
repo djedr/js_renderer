@@ -12,27 +12,27 @@ var canvas, context, device,
 document.addEventListener('DOMContentLoaded', init, false);
 
 var getFileBlob = function (url, cb) {
-        var xhr = new XMLHttpRequest();
-        xhr.open("GET", url);
-        xhr.responseType = "blob";
-        xhr.addEventListener('load', function() {
-            cb(xhr.response);
-        });
-        xhr.send();
+    var xhr = new XMLHttpRequest();
+    xhr.open("GET", url);
+    xhr.responseType = "blob";
+    xhr.addEventListener('load', function() {
+        cb(xhr.response);
+    });
+    xhr.send();
 };
 
 var blobToFile = function (blob, name) {
-        blob.lastModifiedDate = new Date();
-        blob.name = name;
-        return blob;
+    blob.lastModifiedDate = new Date();
+    blob.name = name;
+    return blob;
 };
 
 var getFileObject = function(filePathOrUrl, cb) {
-       getFileBlob(filePathOrUrl, function (blob) {
-          var file_name = filePathOrUrl.split("/");
-           file_name = file_name[file_name.length-1];
-          cb(blobToFile(blob, file_name));
-       });
+    getFileBlob(filePathOrUrl, function (blob) {
+        var file_name = filePathOrUrl.split("/");
+        file_name = file_name[file_name.length-1];
+        cb(blobToFile(blob, file_name));
+    });
 };
 
 function init() {
