@@ -127,10 +127,9 @@ var Renderer;
                     texture_color = color_white;
                 }
                 
-                point = new mama.vector3(x, y, z);
                 // clipping
-                if (point.x >= 0 && point.y >= 0 && point.x < this.workingWidth && point.y < this.workingHeight) {
-                    this.putPixel(point.x, point.y, point.z,
+                if (x >= 0 && y >= 0 && x < this.workingWidth && y < this.workingHeight) {
+                    this.putPixel(x, y, z,
                                   new mama.color4(color.r * shade * texture_color.r,
                                        color.g * shade * texture_color.g,
                                        color.b * shade * texture_color.b,
